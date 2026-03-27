@@ -153,6 +153,19 @@ menu "BlueRetro"
                 Default is GPIO 25 which is free on all standard BlueRetro
                 hardware configurations.
 
+        config BLUERETRO_WS2812_SPI_HOST
+            int "SPI host (1 = SPI2/HSPI, 2 = SPI3/VSPI)"
+            depends on BLUERETRO_WS2812_LED
+            default 2
+            range 1 2
+            help
+                SPI peripheral used for the WS2812 LED strip data signal.
+                The led_strip SPI backend encodes each WS2812 bit as 3 SPI
+                bits at 2.5 MHz and does not share the bus with any device.
+                SPI2 (HSPI) = 1, SPI3 (VSPI) = 2.
+                For GameCube / N64 builds neither SPI bus is used by the
+                wired protocol, so either value works.
+
     endmenu
 
     menu "Debug"

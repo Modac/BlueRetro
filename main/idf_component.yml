@@ -1,0 +1,6 @@
+## IDF Component Manager Manifest File
+dependencies:
+  espressif/led_strip:
+    version: ">=3.0.0"
+    rules:
+      - if: "CONFIG_BLUERETRO_WS2812_LED"

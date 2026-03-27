@@ -108,9 +108,14 @@ if(CONFIG_BLUERETRO_COVERAGE)
     )
 endif()
 
+if(CONFIG_BLUERETRO_WS2812_LED)
+    list(APPEND extra_requires "espressif__led_strip")
+endif()
+
 idf_component_register(
     SRCS "${srcs}" "${cov_srcs}"
     PRIV_INCLUDE_DIRS "."
+    PRIV_REQUIRES ${extra_requires}
     LDFRAGMENTS linker.lf
 )
 
