@@ -26,6 +26,9 @@
 #include "tools/util.h"
 #include "system/fs.h"
 #include "system/led.h"
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+#include "system/ws2812.h"
+#endif
 #include "bare_metal_app_cpu.h"
 #include "manager.h"
 
@@ -284,6 +287,9 @@ static void wired_port_hdl(void) {
                 break;
             }
             set_port_led(j, 0);
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+            ws2812_set_port(j, WS2812_STATE_OFF);
+#endif
             idx++;
         }
 
@@ -302,9 +308,15 @@ static void wired_port_hdl(void) {
         if (device->ids.out_idx < hw_config.port_cnt) {
             if (bt_ready) {
                 set_port_led(device->ids.out_idx, 1);
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+                ws2812_set_port(device->ids.out_idx, WS2812_STATE_CONNECTED);
+#endif
             }
             else if (get_port_led_pin(device->ids.out_idx) != current_pulse_led) {
                 set_port_led(device->ids.out_idx, 0);
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+                ws2812_set_port(device->ids.out_idx, WS2812_STATE_OFF);
+#endif
             }
         }
 
@@ -315,6 +327,9 @@ static void wired_port_hdl(void) {
                 port_led_pulse(new_led);
                 err_led_set = 1;
                 current_pulse_led = new_led;
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+                ws2812_set_port(device->ids.out_idx, WS2812_STATE_SEARCHING);
+#endif
             }
             else {
                 current_pulse_led = 0;
@@ -341,6 +356,10 @@ static void wired_port_hdl(void) {
             update++;
         }
     }
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+    ws2812_update();
+#endif
+
     if (update && !mc_get_state()) {
         printf("# %s: Update ports state: %04X\n", __FUNCTION__, port_mask);
         wired_bare_port_cfg(port_mask);
@@ -772,6 +791,10 @@ void sys_mgr_init(uint32_t package) {
         sys_mgr_deep_sleep();
     }
 #endif /* CONFIG_BLUERETRO_HW2 */
+
+#ifdef CONFIG_BLUERETRO_WS2812_LED
+    ws2812_init(CONFIG_BLUERETRO_WS2812_LED_GPIO);
+#endif
 
     xTaskCreatePinnedToCore(sys_mgr_task, "sys_mgr_task", 2048, NULL, 5, NULL, 0);
 }

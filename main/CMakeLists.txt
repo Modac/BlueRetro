@@ -89,6 +89,12 @@ set(srcs
     "zephyr/atomic.S"
 )
 
+if(CONFIG_BLUERETRO_WS2812_LED)
+    list(APPEND srcs
+        "system/ws2812.c"
+    )
+endif()
+
 if(CONFIG_BLUERETRO_WS_CMDS)
     list(APPEND srcs
         "tests/ws_srv.c"

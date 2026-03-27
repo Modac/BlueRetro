@@ -130,6 +130,31 @@ menu "BlueRetro"
 
     endchoice
 
+    menu "WS2812 LED indicators"
+
+        config BLUERETRO_WS2812_LED
+            bool "Enable WS2812 port-indicator LEDs"
+            default n
+            help
+                Drive a chain of 4 WS2812 addressable LEDs (one per controller
+                port) from a single GPIO pin.
+                LED behaviour:
+                  OFF       – no Bluetooth device assigned to that port
+                  Green     – Bluetooth controller connected and ready
+                  Blue blink – Bluetooth inquiry active, waiting for controller
+
+        config BLUERETRO_WS2812_LED_GPIO
+            int "WS2812 DIN GPIO pin"
+            depends on BLUERETRO_WS2812_LED
+            default 25
+            help
+                GPIO number connected to the WS2812 LED strip data input.
+                Must be an output-capable pin not used by any other function.
+                Default is GPIO 25 which is free on all standard BlueRetro
+                hardware configurations.
+
+    endmenu
+
     menu "Debug"
 
         config BLUERETRO_QEMU
