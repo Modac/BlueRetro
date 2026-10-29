@@ -19,6 +19,7 @@
 #include "adapter/gameid.h"
 #include "system/manager.h"
 #include "system/fs.h"
+#include "system/port_led.h"
 
 #define ATT_MAX_LEN 512
 #define BR_ABI_VER 2
@@ -30,11 +31,15 @@
 #define CFG_CMD_GET_CFG_SRC 0x05
 #define CFG_CMD_GET_FILE 0x06
 #define CFG_CMD_GET_FW_NAME 0x07
+#define CFG_CMD_GET_PORT_LED_CFG 0x08
 #define CFG_CMD_SET_DEFAULT_CFG 0x10
 #define CFG_CMD_SET_GAMEID_CFG 0x11
 #define CFG_CMD_OPEN_DIR 0x12
 #define CFG_CMD_CLOSE_DIR 0x13
 #define CFG_CMD_DEL_FILE 0x14
+#define CFG_CMD_SET_PORT_LED_CFG 0x15
+#define CFG_CMD_SAVE_PORT_LED_CFG 0x16
+#define CFG_CMD_PORT_LED_IDENTIFY 0x17
 #define CFG_CMD_SYS_DEEP_SLEEP 0x37
 #define CFG_CMD_SYS_RESET 0x38
 #define CFG_CMD_SYS_FACTORY 0x39
@@ -377,6 +382,15 @@ static void bt_att_cfg_cmd_file_rsp(uint16_t handle) {
     bt_att_cmd(handle, BT_ATT_OP_READ_RSP, len);
 }
 
+static void bt_att_cfg_cmd_port_led_cfg_rsp(uint16_t handle) {
+    struct port_led_cfg cfg;
+
+    port_led_get_cfg(&cfg);
+    memcpy(bt_hci_pkt_tmp.att_data, &cfg, sizeof(cfg));
+
+    bt_att_cmd(handle, BT_ATT_OP_READ_RSP, sizeof(cfg));
+}
+
 static void bt_att_cmd_read_group_rsp(uint16_t handle, uint16_t start, uint16_t end) {
     struct bt_att_read_group_rsp *rd_grp_rsp = (struct bt_att_read_group_rsp *)bt_hci_pkt_tmp.att_data;
     struct bt_att_group_data *gatt_data = (struct bt_att_group_data *)((uint8_t *)rd_grp_rsp->data + 0);
@@ -438,6 +452,9 @@ static void bt_att_cfg_cmd_rd_hdlr(uint16_t handle) {
             break;
         case CFG_CMD_GET_FW_NAME:
             bt_att_cfg_cmd_fw_name_rsp(handle);
+            break;
+        case CFG_CMD_GET_PORT_LED_CFG:
+            bt_att_cfg_cmd_port_led_cfg_rsp(handle);
             break;
         default:
             printf("# Invalid read cfg cmd: %02X\n", cfg_cmd);
@@ -533,6 +550,20 @@ static void bt_att_cfg_cmd_wr_hdlr(struct bt_dev *device, uint8_t *data, uint32_
             remove(tmp_str);
             break;
         }
+        case CFG_CMD_SET_PORT_LED_CFG:
+            if (len == 1 + sizeof(struct port_led_cfg)) {
+                port_led_set_cfg((struct port_led_cfg *)&data[1]);
+            }
+            else {
+                printf("# Invalid port LED cfg len: %ld\n", len);
+            }
+            break;
+        case CFG_CMD_SAVE_PORT_LED_CFG:
+            port_led_save_cfg();
+            break;
+        case CFG_CMD_PORT_LED_IDENTIFY:
+            port_led_identify();
+            break;
         default:
             break;
     }

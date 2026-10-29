@@ -26,6 +26,7 @@
 #include "tools/util.h"
 #include "system/fs.h"
 #include "system/led.h"
+#include "system/port_led.h"
 #include "bare_metal_app_cpu.h"
 #include "manager.h"
 
@@ -275,6 +276,7 @@ static void wired_port_hdl(void) {
     for (int32_t i = 0, j = 0, idx = 0; i < BT_MAX_DEV; i++) {
         struct bt_dev *device = NULL;
         uint8_t bt_ready = 0;
+        uint8_t pairing = 0;
 
         bt_host_get_dev_from_id(i, &device);
 
@@ -284,6 +286,7 @@ static void wired_port_hdl(void) {
                 break;
             }
             set_port_led(j, 0);
+            port_led_set_port(j, PORT_LED_WIRED);
             idx++;
         }
 
@@ -312,12 +315,25 @@ static void wired_port_hdl(void) {
             uint8_t new_led = (device->ids.out_idx < hw_config.port_cnt) ? get_port_led_pin(device->ids.out_idx) : 0;
 
             if (bt_hci_get_inquiry()) {
+                pairing = 1;
                 port_led_pulse(new_led);
                 err_led_set = 1;
                 current_pulse_led = new_led;
             }
             else {
                 current_pulse_led = 0;
+            }
+        }
+
+        if (device->ids.out_idx < hw_config.port_cnt) {
+            if (bt_ready) {
+                port_led_set_port(device->ids.out_idx, PORT_LED_BT);
+            }
+            else if (pairing) {
+                port_led_set_port(device->ids.out_idx, PORT_LED_PAIRING);
+            }
+            else {
+                port_led_set_port(device->ids.out_idx, PORT_LED_OFF);
             }
         }
 
@@ -375,12 +391,14 @@ static void boot_btn_hdl(void) {
 
     if (sys_mgr_get_boot_btn()) {
         set_leds_as_btn_status(1);
+        port_led_set_btn(1, 0);
 
         while (sys_mgr_get_boot_btn()) {
             hold_cnt++;
             if (hold_cnt > (hw_config.sw_io0_hold_thres_ms[state] / 10) && state < SYS_MGR_BTN_STATE3) {
                 ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, hw_config.led_flash_duty_cycle, 0);
                 ledc_set_freq(LEDC_LOW_SPEED_MODE, LEDC_TIMER_1, hw_config.led_flash_hz[state]);
+                port_led_set_btn(1, hw_config.led_flash_hz[state]);
                 state++;
             }
             if (hold_cnt == 3000) {
@@ -435,6 +453,7 @@ static void boot_btn_hdl(void) {
         }
 
         set_leds_as_btn_status(0);
+        port_led_set_btn(0, 0);
         inhibit_cnt = INHIBIT_CNT;
     }
 }
@@ -772,6 +791,8 @@ void sys_mgr_init(uint32_t package) {
         sys_mgr_deep_sleep();
     }
 #endif /* CONFIG_BLUERETRO_HW2 */
+
+    port_led_init();
 
     xTaskCreatePinnedToCore(sys_mgr_task, "sys_mgr_task", 2048, NULL, 5, NULL, 0);
 }
