@@ -241,7 +241,7 @@ static void render(uint8_t *grb, uint32_t ms) {
         uint32_t on = 1;
 
         if (btn_flash_hz) {
-            on = !((ms * btn_flash_hz * 2 / 1000) & 1);
+            on = !(((ms % 1000) * btn_flash_hz * 2 / 1000) & 1);
         }
         if (on) {
             for (uint32_t i = 0; i < PORT_LED_MAX; i++) {
